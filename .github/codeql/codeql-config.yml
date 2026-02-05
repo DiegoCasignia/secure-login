@@ -1,0 +1,26 @@
+name: "Custom CodeQL Security Config"
+
+paths:
+  - backend/src
+  - frontend/src
+  - shared
+  
+paths-ignore:
+  - node_modules
+  - dist
+  - build
+  - coverage
+  - .github
+  - .vscode
+  
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+    
+query-filters:
+  - exclude:
+      id: js/hardcoded-credentials
+      reason: "Usamos variables de entorno en producción"
+      
+packs:
+  - codeql/javascript-queries
