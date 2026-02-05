@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { LoginUseCase } from '../../application/use-cases/auth/LoginUseCase';
 import { VerifyFaceUseCase } from '../../application/use-cases/auth/VerifyFaceUseCase';
 import { CompleteRegistrationUseCase } from '../../application/use-cases/user/CompleteRegistrationUseCase';
+import { ChangePasswordUseCase } from '../../application/use-cases/user/ChangePasswordUseCase';
+import { ForgotPasswordUseCase } from '../../application/use-cases/auth/ForgotPasswordUseCase';
 import { LogoutUseCase } from '../../application/use-cases/auth/LogoutUseCase';
 import { AppError } from '../../utils/errors/AppError';
 import { ApiResponse } from '../../core/types';
@@ -10,12 +12,16 @@ export class AuthController {
   private loginUseCase: LoginUseCase;
   private verifyFaceUseCase: VerifyFaceUseCase;
   private completeRegistrationUseCase: CompleteRegistrationUseCase;
+  private changePasswordUseCase: ChangePasswordUseCase;
+  private forgotPasswordUseCase: ForgotPasswordUseCase;
   private logoutUseCase: LogoutUseCase;
 
   constructor() {
     this.loginUseCase = new LoginUseCase();
     this.verifyFaceUseCase = new VerifyFaceUseCase();
     this.completeRegistrationUseCase = new CompleteRegistrationUseCase();
+    this.changePasswordUseCase = new ChangePasswordUseCase();
+    this.forgotPasswordUseCase = new ForgotPasswordUseCase();
     this.logoutUseCase = new LogoutUseCase();
   }
 
@@ -206,6 +212,70 @@ export class AuthController {
           role: req.user?.role,
           profileCompleted: req.user?.profileCompleted,
         },
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
+  changePassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      const userId = req.user?.userId;
+      const ipAddress = req.ip;
+      const userAgent = req.get('User-Agent');
+
+      if (!userId) {
+        throw new AppError('User not authenticated', 401);
+      }
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        throw new AppError('Current password, new password, and confirmation are required', 400);
+      }
+
+      const result = await this.changePasswordUseCase.execute(
+        {
+          userId,
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        },
+        ipAddress,
+        userAgent
+      );
+
+      const response: ApiResponse = {
+        success: true,
+        data: result,
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
+  forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { email } = req.body;
+      const ipAddress = req.ip;
+      const userAgent = req.get('User-Agent');
+
+      if (!email) {
+        throw new AppError('Email is required', 400);
+      }
+
+      const result = await this.forgotPasswordUseCase.execute(
+        email,
+        ipAddress,
+        userAgent
+      );
+
+      const response: ApiResponse = {
+        success: true,
+        data: result,
       };
 
       res.status(200).json(response);

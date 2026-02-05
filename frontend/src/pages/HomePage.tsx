@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Shield, User, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ChangePasswordModal from '../components/common/ChangePasswordModal';
 
 const HomePage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -124,11 +126,11 @@ const HomePage: React.FC = () => {
               </h3>
             </div>
             <div className="space-y-3">
-              <button className="w-full text-left px-4 py-3 text-sm font-medium text-gray-300 border border-gray-600 hover:bg-gray-50 hover:text-gray-700 rounded-lg transition-colors cursor-pointer">
+              <button 
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-gray-300 border border-gray-600 hover:bg-gray-50 hover:text-gray-700 rounded-lg transition-colors cursor-pointer"
+              >
                 Change Password
-              </button>
-              <button className="w-full text-left px-4 py-3 text-sm font-medium text-gray-300 border border-gray-600 hover:bg-gray-50 hover:text-gray-700 rounded-lg transition-colors cursor-pointer">
-                View Login History
               </button>
             </div>
           </div>
@@ -165,6 +167,11 @@ const HomePage: React.FC = () => {
           </ul>
         </div>
       </main>
+
+      <ChangePasswordModal 
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </div>
   );
 };

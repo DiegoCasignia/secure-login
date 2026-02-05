@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void>;
@@ -10,6 +11,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,9 +92,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(true)}
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </div>
 
@@ -114,6 +120,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
           </div>
         </form>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+      />
     </div>
   );
 };

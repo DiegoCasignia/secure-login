@@ -57,6 +57,28 @@ const logoutSchema = z.object({
     .min(1, 'Refresh token is required'),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string()
+    .min(1, 'Current password is required')
+    .max(100, 'Password is too long'),
+  newPassword: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(100, 'Password is too long')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*]/, 'Password must contain at least one special character (!@#$%^&*)'),
+  confirmPassword: z.string()
+    .min(1, 'Confirmation password is required'),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string()
+    .email('Invalid email format')
+    .min(1, 'Email is required')
+    .max(254, 'Email is too long'),
+});
+
 // Public routes
 router.post(
   '/login',
@@ -81,6 +103,13 @@ router.post(
 );
 
 router.post(
+  '/forgot-password',
+  authRateLimiter,
+  validate(forgotPasswordSchema),
+  authController.forgotPassword
+);
+
+router.post(
   '/refresh',
   validate(refreshTokenSchema),
   refreshToken
@@ -98,6 +127,13 @@ router.get(
   '/me',
   authenticate,
   authController.getCurrentUser
+);
+
+router.post(
+  '/change-password',
+  authenticate,
+  validate(changePasswordSchema),
+  authController.changePassword
 );
 
 export default router;

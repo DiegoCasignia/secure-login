@@ -46,6 +46,22 @@ class AuthService {
     const response = await apiClient.put<User>('/auth/profile', data);
     return response.data;
   }
+
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<ApiResponse<{ success: boolean; message: string }>>('/auth/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+    return response.data.data;
+  }
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<ApiResponse<{ success: boolean; message: string }>>('/auth/forgot-password', {
+      email,
+    });
+    return response.data.data;
+  }
 }
 
 export const authService = new AuthService();
