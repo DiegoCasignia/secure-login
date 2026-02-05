@@ -125,7 +125,17 @@ const RegisterPage: React.FC = () => {
         navigate('/');
       }, 1500);
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+      const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
+      
+      if (error.response?.status === 409) {
+        toast.error(errorMessage);
+        setCaptures([]);
+        setCaptureCount(0);
+        setFaceDescriptor(null);
+        setStep('face');
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }

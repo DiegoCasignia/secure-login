@@ -95,4 +95,31 @@ export class FaceRecognitionService {
       isPrimary: true,
     });
   }
+
+  async checkIfFaceExists(
+    incomingDescriptor: number[],
+    threshold = config.face.threshold
+  ): Promise<{ exists: boolean; matchedUserId?: string; distance?: number }> {
+    FaceRecognitionService.validateDescriptor(incomingDescriptor);
+
+    const allDescriptors = await faceDescriptorRepository.findAllDescriptors();
+
+    for (const descriptor of allDescriptors) {
+      const result = FaceRecognitionService.compareDescriptors(
+        descriptor.descriptor,
+        incomingDescriptor,
+        threshold
+      );
+
+      if (result.match) {
+        return {
+          exists: true,
+          matchedUserId: descriptor.userId,
+          distance: result.distance,
+        };
+      }
+    }
+
+    return { exists: false };
+  }
 }

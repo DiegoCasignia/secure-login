@@ -40,6 +40,12 @@ export class CompleteRegistrationUseCase {
         throw new AppError('First name and last name are required', 400);
       }
 
+      // Check if face already exists in the system
+      const faceCheck = await this.faceRecognitionService.checkIfFaceExists(faceDescriptor);
+      if (faceCheck.exists) {
+        throw new AppError('This facial identity is already registered. Please use a different face or contact support.', 409);
+      }
+
       await this.faceRecognitionService.registerFace(userId, faceDescriptor);
 
       const updatedUser = await userRepository.update(userId, {

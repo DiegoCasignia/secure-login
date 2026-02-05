@@ -6,12 +6,10 @@ export class FaceDescriptorRepository {
   private table = 'face_descriptors';
 
   async create(data: ICreateFaceDescriptor): Promise<IFaceDescriptor> {
-    // Validate descriptor dimensions
     if (data.descriptor.length !== config.face.dimensions) {
       throw new Error(`Descriptor must have exactly ${config.face.dimensions} dimensions`);
     }
 
-    // If this is primary, unset any existing primary descriptor
     if (data.isPrimary) {
       await db(this.table)
         .where('user_id', data.userId)
@@ -56,15 +54,12 @@ export class FaceDescriptorRepository {
   }
 
   async setPrimary(id: string, userId: string): Promise<IFaceDescriptor | null> {
-    // Start transaction
     await db.transaction(async (trx) => {
-      // Unset existing primary
       await trx(this.table)
         .where('user_id', userId)
         .where('is_primary', true)
         .update({ is_primary: false });
 
-      // Set new primary
       await trx(this.table)
         .where('id', id)
         .where('user_id', userId)
@@ -94,6 +89,13 @@ export class FaceDescriptorRepository {
       .count('id as total');
     
     return parseInt(result.total as string, 10);
+  }
+
+  async findAllDescriptors(): Promise<IFaceDescriptor[]> {
+    const descriptors = await db(this.table)
+      .select('*');
+    
+    return descriptors.map(this.mapToFaceDescriptor);
   }
 
   private mapToFaceDescriptor(row: any): IFaceDescriptor {
