@@ -39,10 +39,10 @@ const knexConfig: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: 'knex_migrations',
-      directory: './dist/infrastructure/database/migrations',
+      directory: './src/infrastructure/database/migrations',
     },
     seeds: {
-      directory: './dist/infrastructure/database/seeds',
+      directory: './src/infrastructure/database/seeds',
     },
   },
 };
