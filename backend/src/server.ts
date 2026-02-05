@@ -14,7 +14,7 @@ const app = express();
 app.use(helmet());
 app.use(cors({
   origin: config.env === 'production' 
-    ? ['https://yourapp.com'] 
+    ? [config.frontendUrl] 
     : ['http://localhost:3000', 'http://localhost:5000'],
   credentials: true,
 }));
@@ -60,7 +60,6 @@ process.on('SIGINT', gracefulShutdown);
 // Start server
 const startServer = async (): Promise<void> => {
   try {
-    // Test database connection
     await testConnection();
 
     // Load face API models
@@ -81,7 +80,6 @@ Time: ${new Date().toLocaleString()}
   }
 };
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   process.exit(1);

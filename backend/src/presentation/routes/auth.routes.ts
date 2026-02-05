@@ -7,7 +7,6 @@ import { z } from 'zod';
 
 const router = Router();
 
-// Validation schemas
 const loginSchema = z.object({
   email: z.string()
     .email('Invalid email format')

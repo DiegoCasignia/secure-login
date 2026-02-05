@@ -7,6 +7,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).default(5000),
   API_VERSION: z.string().default('v1'),
+  FRONTEND_URL: z.string(),
   
   // Database
   DB_HOST: z.string().default('localhost'),
@@ -55,6 +56,7 @@ export const config = {
   env: env.NODE_ENV,
   port: env.PORT,
   apiVersion: env.API_VERSION,
+  frontendUrl: env.FRONTEND_URL,
   
   db: {
     host: env.DB_HOST,
