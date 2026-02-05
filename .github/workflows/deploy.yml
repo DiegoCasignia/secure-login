@@ -11,9 +11,108 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Análisis de seguridad con CodeQL
+  codeql-security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript']
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended,security-and-quality
+        config-file: ./.github/codeql/codeql-config.yml
+        
+    - name: Autobuild TypeScript projects
+      uses: github/codeql-action/autobuild@v3
+      
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{ matrix.language }}"
+        
+    # Detección adicional de código malicioso
+    - name: Malicious code patterns scan
+      run: |
+        echo "=== Buscando patrones de código malicioso ==="
+        
+        # Patrones comunes de código malicioso
+        echo "1. Buscando eval() y Function()"
+        find . -type f \( -name "*.ts" -o -name "*.js" -o -name "*.tsx" -o -name "*.jsx" \) \
+          -not -path "*/node_modules/*" \
+          -not -path "*/dist/*" \
+          -not -path "*/build/*" \
+          -exec grep -l "eval\|Function(" {} \; | head -10 || true
+        
+        echo "2. Buscando scripts de minería conocidos"
+        find . -type f \( -name "*.ts" -o -name "*.js" \) \
+          -not -path "*/node_modules/*" \
+          -exec grep -l -i "coinhive\|cryptonight\|miner\|webassembly.*miner" {} \; || true
+        
+        echo "3. Buscando secretos hardcodeados"
+        grep -r "\(AKIA\|sk_live\|xoxb\|ghp\|eyJ\)[A-Za-z0-9_-]*" \
+          --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" \
+          --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build . || true
+        
+        echo "4. Buscando ejecución de comandos dinámicos"
+        find . -type f \( -name "*.ts" -o -name "*.js" \) \
+          -not -path "*/node_modules/*" \
+          -exec grep -l "child_process\|exec\|spawn\|fork" {} \; | head -5 || true
+        
+    # Análisis de dependencias para paquetes maliciosos
+    - name: Dependency security scan
+      run: |
+        echo "=== Escaneo de dependencias ==="
+        
+        # Backend dependencies
+        if [ -f "backend/package.json" ]; then
+          echo "Analizando dependencias del backend..."
+          cd backend
+          npm audit --audit-level=high || echo "npm audit completado"
+          cd ..
+        fi
+        
+        # Frontend dependencies  
+        if [ -f "frontend/package.json" ]; then
+          echo "Analizando dependencias del frontend..."
+          cd frontend
+          npm audit --audit-level=high || echo "npm audit completado"
+          cd ..
+        fi
+        
+    # Verificación de archivos sospechosos
+    - name: Suspicious files check
+      run: |
+        echo "=== Verificando archivos sospechosos ==="
+        
+        # Buscar archivos con extensiones sospechosas
+        find . -type f \( -name "*.min.js" -o -name "*.bundle.js" \) \
+          -not -path "*/node_modules/*" \
+          -not -path "*/dist/*" \
+          -not -path "*/build/*" | head -5 || true
+        
+        # Buscar archivos muy grandes (posiblemente ofuscados)
+        find . -type f -name "*.js" -size +1M \
+          -not -path "*/node_modules/*" \
+          -not -path "*/dist/*" \
+          -not -path "*/build/*" | head -3 || true
+
   # Test y Build
   test-and-build:
     runs-on: ubuntu-latest
+    needs: codeql-security-scan
     
     strategy:
       matrix:
@@ -94,7 +193,7 @@ jobs:
         retention-days: 1
 
     - name: Upload Frontend Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/download-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
