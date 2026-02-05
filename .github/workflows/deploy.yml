@@ -147,33 +147,3 @@ jobs:
         api-key: ${{ secrets.RENDER_API_KEY }}
         wait-for-deploy: true
         deploy-message: "Deploy from GitHub Actions: ${{ github.sha }}"
-
-  # Database Migrations
-  run-migrations:
-    needs: deploy-backend
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18.x'
-        cache: 'npm'
-        cache-dependency-path: 'backend/package-lock.json'
-
-    - name: Install Backend Dependencies
-      run: |
-        cd backend
-        npm ci --only=production
-
-    - name: Run Database Migrations
-      run: |
-        cd backend
-        npx knex migrate:latest
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        NODE_ENV: production
