@@ -20,6 +20,9 @@ const TwoFactorFaceScan: React.FC<TwoFactorFaceScanProps> = ({
   const [scanComplete, setScanComplete] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [isVerifying, setIsVerifying] = useState(false);
+  // const [step, setStep] = useState<'liveness' | 'scan'>('liveness');
+  // const [livenessProgress, setLivenessProgress] = useState('waiting');
+  // const [isDetectingBlink, setIsDetectingBlink] = useState(false);
   
   const { uploadUser, uploadAccessToken } = useAuth();
   const {
@@ -31,6 +34,7 @@ const TwoFactorFaceScan: React.FC<TwoFactorFaceScanProps> = ({
     startCamera,
     stopCamera,
     captureFaceDescriptor,
+    // detectBlinkForLiveness,
   } = useFaceDetection();
 
   useEffect(() => {
@@ -63,6 +67,36 @@ const TwoFactorFaceScan: React.FC<TwoFactorFaceScanProps> = ({
     setCountdown(3);
     setScanComplete(false);
   };
+
+  // const startLivenessCheck = async () => {
+  //   setIsDetectingBlink(true);
+  //   setLivenessProgress('detecting');
+    
+  //   try {
+  //     await detectBlinkForLiveness(10000);
+  //     setLivenessProgress('detected');
+  //     toast.success('Liveness verified! Now starting face scan...');
+      
+  //     setTimeout(() => {
+  //       setStep('scan');
+  //       setIsDetectingBlink(false);
+  //       startScan();
+  //     }, 1500);
+  //   } catch (error: any) {
+  //     setLivenessProgress('failed');
+  //     toast.error(error.message || 'Liveness detection failed. Please try again.');
+  //     setIsDetectingBlink(false);
+      
+  //     setTimeout(() => {
+  //       setLivenessProgress('waiting');
+  //     }, 2000);
+  //   }
+  // };
+
+  // const retryLivenessCheck = () => {
+  //   setLivenessProgress('waiting');
+  //   setIsDetectingBlink(false);
+  // };
 
   const performFaceScan = async () => {
     try {

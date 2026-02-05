@@ -146,6 +146,98 @@ export const useFaceDetection = () => {
     return result.descriptor;
   }, [detectFace]);
 
+  const detectBlinkForLiveness = useCallback(async (timeoutMs = 10000): Promise<boolean> => {
+    if (!modelsLoaded || !videoRef.current) {
+      throw new Error('Models not loaded or camera not ready');
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const startTime = Date.now();
+    let previousLeftEyeOpen: boolean | null = null;
+    let eyeOpenToClosedDetected = false;
+    let eyeClosedToOpenDetected = false;
+
+    return new Promise((resolve, reject) => {
+      const detectionInterval = setInterval(async () => {
+        try {
+          if (Date.now() - startTime > timeoutMs) {
+            clearInterval(detectionInterval);
+            reject(new Error('Blink detection timeout. Please try again.'));
+            return;
+          }
+
+          const detection = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks(true)
+            .withFaceExpressions();
+
+          if (!detection) {
+            return; // Face not detected, continue waiting
+          }
+
+          // Draw detection on canvas
+          if (canvas) {
+            const context = canvas.getContext('2d');
+            if (context && video.videoWidth && video.videoHeight) {
+              context.clearRect(0, 0, canvas.width, canvas.height);
+              const dims = faceapi.matchDimensions(canvas, video, true);
+              const resizedDetection = faceapi.resizeResults(detection, dims);
+              faceapi.draw.drawDetections(canvas, [resizedDetection]);
+              faceapi.draw.drawFaceLandmarks(canvas, [resizedDetection]);
+            }
+          }
+
+          // Get landmarks
+          const landmarks = detection.landmarks.positions;
+
+          // Calculate eye aspect ratio for each eye
+          // Left eye landmarks: 36-41
+          // Right eye landmarks: 42-47
+          const leftEyeLandmarks = landmarks.slice(36, 42);
+          const rightEyeLandmarks = landmarks.slice(42, 48);
+
+          const calculateEyeAspectRatio = (eyeLandmarks: any[]) => {
+            const A = Math.hypot(eyeLandmarks[1].x - eyeLandmarks[5].x, eyeLandmarks[1].y - eyeLandmarks[5].y);
+            const B = Math.hypot(eyeLandmarks[2].x - eyeLandmarks[4].x, eyeLandmarks[2].y - eyeLandmarks[4].y);
+            const C = Math.hypot(eyeLandmarks[0].x - eyeLandmarks[3].x, eyeLandmarks[0].y - eyeLandmarks[3].y);
+            return (A + B) / (2 * C);
+          };
+
+          const leftEyeAspectRatio = calculateEyeAspectRatio(leftEyeLandmarks);
+          const rightEyeAspectRatio = calculateEyeAspectRatio(rightEyeLandmarks);
+
+          // EAR threshold (below this means eyes closed)
+          const EAR_THRESHOLD = 0.2;
+
+          const leftEyeOpen = leftEyeAspectRatio > EAR_THRESHOLD;
+          const rightEyeOpen = rightEyeAspectRatio > EAR_THRESHOLD;
+          const eyesOpen = leftEyeOpen && rightEyeOpen;
+
+          // Detect open to closed transition
+          if (previousLeftEyeOpen === true && !eyesOpen) {
+            eyeOpenToClosedDetected = true;
+          }
+
+          // Detect closed to open transition (complete blink)
+          if (eyeOpenToClosedDetected && eyesOpen) {
+            eyeClosedToOpenDetected = true;
+          }
+
+          previousLeftEyeOpen = leftEyeOpen;
+
+          // If we detected a complete blink, resolve
+          if (eyeOpenToClosedDetected && eyeClosedToOpenDetected) {
+            clearInterval(detectionInterval);
+            resolve(true);
+          }
+        } catch (error) {
+          console.error('Blink detection error:', error);
+        }
+      }, 50); // Check every 50ms
+    });
+  }, [modelsLoaded]);
+
   useEffect(() => {
     return () => {
       stopCamera();
@@ -163,5 +255,6 @@ export const useFaceDetection = () => {
     stopCamera,
     detectFace,
     captureFaceDescriptor,
+    detectBlinkForLiveness,
   };
 };

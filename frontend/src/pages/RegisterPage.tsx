@@ -451,7 +451,7 @@ const RegisterPage: React.FC = () => {
               Finalizing...
             </div>
           ) : (
-            'Go to Dashboard'
+            'Finish'
           )}
         </button>
 
