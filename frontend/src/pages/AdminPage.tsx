@@ -55,7 +55,7 @@ interface Stats {
 }
 
 const AdminPage: React.FC = () => {
-  const { user: currentUser, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'users' | 'audit' | 'stats'>('users');
   const [users, setUsers] = useState<UserData[]>([]);
