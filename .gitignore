@@ -1,0 +1,126 @@
+############################
+# GENERAL
+############################
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Coverage
+coverage/
+*.lcov
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Temporary / cache
+.tmp/
+.temp/
+.cache/
+
+############################
+# DEPENDENCIES
+############################
+
+node_modules/
+
+############################
+# FRONTEND (React + Vite)
+############################
+
+# Dependencies
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+frontend/dist-ssr/
+
+# Vite
+frontend/.vite/
+
+# Tailwind cache
+frontend/.tailwind-cache/
+
+# Frontend env
+frontend/.env
+frontend/.env.*
+
+############################
+# BACKEND (Node + Express)
+############################
+
+# Dependencies
+backend/node_modules/
+
+# Build outputs
+backend/dist/
+backend/build/
+
+# Backend env
+backend/.env
+backend/.env.*
+
+# Nodemon
+backend/.nodemon.json
+
+############################
+# TESTING
+############################
+
+# Jest / Vitest
+jest-cache/
+.vitest/
+
+############################
+# CI / CD
+############################
+
+# GitHub Actions artifacts
+*.tgz
+
+# Local act testing
+.act/
+
+############################
+# EDITORS & IDEs
+############################
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# IntelliJ / WebStorm
+.idea/
+*.iml
+
+############################
+# OS FILES
+############################
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+############################
+# ROOT BUILD (safety net)
+############################
+
+dist/
+build/
