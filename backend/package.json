@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "npm install --only=dev && tsc",
+    "build": "npm ci --include=dev && tsc",
     "start": "node dist/server.js",
     "migrate:make": "knex migrate:make",
     "migrate:latest": "knex migrate:latest",
