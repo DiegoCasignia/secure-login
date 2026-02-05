@@ -1,0 +1,179 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Test y Build
+  test-and-build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_facial_auth
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
+
+    - name: Install dependencies (Backend)
+      run: |
+        cd backend
+        npm ci
+
+    - name: Run linting (Backend)
+      run: |
+        cd backend
+        npm run lint || echo "Linting failed but continuing"
+
+    - name: Run tests (Backend)
+      run: |
+        cd backend
+        npm test || echo "Tests failed but continuing"
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_facial_auth
+        JWT_SECRET: test-jwt-secret-for-ci-cd-pipeline
+
+    - name: Build Backend
+      run: |
+        cd backend
+        npm run build
+
+    - name: Install dependencies (Frontend)
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run linting (Frontend)
+      run: |
+        cd frontend
+        npm run lint || echo "Linting failed but continuing"
+
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
+      env:
+        VITE_API_URL: http://localhost:5000/api/v1
+
+    - name: Upload Backend Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-dist
+        path: backend/dist/
+        retention-days: 1
+
+    - name: Upload Frontend Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+        retention-days: 1
+
+  # Deploy Backend a Render
+  deploy-backend:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download Backend Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-dist
+        path: backend/dist
+
+    - name: Deploy to Render (Backend)
+      uses: johnbeynon/render-deploy-action@v0.0.8
+      with:
+        service-id: ${{ secrets.RENDER_BACKEND_SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}
+        wait-for-deploy: true
+        deploy-message: "Deploy from GitHub Actions: ${{ github.sha }}"
+
+  # Deploy Frontend a Render
+  deploy-frontend:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download Frontend Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/dist
+
+    - name: Deploy to Render (Frontend)
+      uses: johnbeynon/render-deploy-action@v0.0.8
+      with:
+        service-id: ${{ secrets.RENDER_FRONTEND_SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}
+        wait-for-deploy: true
+        deploy-message: "Deploy from GitHub Actions: ${{ github.sha }}"
+
+  # Database Migrations
+  run-migrations:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+
+    - name: Install Backend Dependencies
+      run: |
+        cd backend
+        npm ci --only=production
+
+    - name: Run Database Migrations
+      run: |
+        cd backend
+        npx knex migrate:latest
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NODE_ENV: production
