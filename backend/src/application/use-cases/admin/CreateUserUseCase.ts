@@ -6,6 +6,7 @@ import { ICreateUser } from '../../../core/interfaces/IUser';
 import { AppError } from '../../../utils/errors/AppError';
 import { UserRole } from '../../../core/interfaces/IUser';
 import { config } from '../../../config/env';
+import * as crypto from 'node:crypto';
 
 export class CreateUserUseCase {
   async execute(
@@ -81,13 +82,15 @@ export class CreateUserUseCase {
   private generateTemporaryPassword(): string {
     const length = 12;
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+
+    const randomBytes = crypto.randomBytes(length);
+
     let password = '';
-    
     for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * charset.length);
+      const randomIndex = randomBytes[i] % charset.length;
       password += charset[randomIndex];
     }
-    
+
     return password;
   }
 }

@@ -29,6 +29,7 @@ coverage/
 ############################
 
 node_modules/
+.scannerwork/
 
 ############################
 # FRONTEND (React + Vite)

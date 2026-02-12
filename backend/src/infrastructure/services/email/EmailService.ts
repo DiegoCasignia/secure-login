@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from '../../../config/env';
+import { convert } from 'html-to-text';
 
 export class EmailService {
   private transporter: nodemailer.Transporter;
@@ -144,17 +145,15 @@ export class EmailService {
       console.log(`Email sent to ${to}: ${subject}`);
     } catch (error) {
       console.error('Error sending email:', error);
-      // In production, you might want to queue the email or use a fallback service
       throw new Error('Failed to send email');
     }
   }
 
-  private htmlToText(html: string): string {
-    return html
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
+private htmlToText(html: string): string {
+  return convert(html, {
+    wordwrap: false
+  }).replaceAll(/\s+/g, ' ').trim();
+}
 }
 
 export const emailService = new EmailService();
